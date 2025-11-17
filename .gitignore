@@ -42,3 +42,8 @@
 
 # Visual Studio files
 .vscode/*
+
+# Main binary
+main
+main.exe
+main.o
