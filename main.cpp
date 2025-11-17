@@ -9,18 +9,18 @@
 
 class RecommenderSystem {
 private:
-    std::vector<std::vector<float>> users;
-    std::vector<std::vector<float>> predicted;
-    std::vector<std::vector<float>> similarities;
-    int nbUsers;
-    int nbItems;
+    std::vector<std::vector<float>> m_users;
+    std::vector<std::vector<float>> m_predicted;
+    std::vector<std::vector<float>> m_similarities;
+    int m_nbUsers;
+    int m_nbItems;
 
 public:
-    RecommenderSystem() : nbUsers(0), nbItems(0) {}
+    RecommenderSystem() : m_nbUsers(0), m_nbItems(0) {}
 
-    void createFakeData(int nbUsers, int nbItems, float sparsity) {
-        this->nbItems = nbItems;
-        this->nbUsers = nbUsers;
+    void createFakeData(int _nbUsers, int _nbItems, float _sparsity) {
+        this->m_nbItems = _nbItems;
+        this->m_nbUsers = _nbUsers;
         
         std::vector<std::vector<float>> userProfiles;
         std::vector<std::vector<float>> itemsProfiles;
@@ -34,7 +34,7 @@ public:
         std::uniform_real_distribution<float> dis(0.0f, 1.0f);
         
         // creating users profiles
-        for (int i = 0; i < nbUsers; i++) {
+        for (int i = 0; i < m_nbUsers; i++) {
             std::vector<float> currentUserProfile;
             
             for (int j = 0; j < profileDimension; j++) {
@@ -44,7 +44,7 @@ public:
         }
         
         // creating items profiles
-        for (int i = 0; i < nbItems; i++) {
+        for (int i = 0; i < m_nbItems; i++) {
             std::vector<float> currentItemProfile;
             
             for (int j = 0; j < profileDimension; j++) {
@@ -54,13 +54,13 @@ public:
         }
         
         // generating rates from users and items profiles
-        for (int i = 0; i < nbUsers; i++) {
+        for (int i = 0; i < m_nbUsers; i++) {
             std::vector<float> currentUserNote;
             
-            for (int j = 0; j < nbItems; j++) {
+            for (int j = 0; j < m_nbItems; j++) {
                 float newNote = dis(gen);
                 
-                if (newNote < sparsity) {
+                if (newNote < _sparsity) {
                     float note = 0.0f;
                     
                     for (int k = 0; k < profileDimension; k++) {
@@ -71,14 +71,14 @@ public:
                     currentUserNote.push_back(-1.0f);
                 }
             }
-            predicted.push_back(currentUserNote);
-            users.push_back(currentUserNote);
+            m_predicted.push_back(currentUserNote);
+            m_users.push_back(currentUserNote);
             std::vector<float> simForUser;
-            for (int j = 0; j < nbUsers; j++) 
+            for (int j = 0; j < m_nbUsers; j++) 
             {
                 simForUser.push_back(-1.0f);
             }
-            similarities.push_back(simForUser);
+            m_similarities.push_back(simForUser);
         }
          
         // for (int i = 0; i < this->nbUsers; i++) {
@@ -89,56 +89,50 @@ public:
         // }
         
     }
-    
-    // Getters
-    int getNbUsers() const { return nbUsers; }
-    int getNbItems() const { return nbItems; }
-    const std::vector<std::vector<float>>& getUsers() const { return users; }
-    const std::vector<std::vector<float>>& getPredicted() const { return predicted; }
 
-    float getSimilarityCosinus(int userA, int userB) {
-        if (similarities[userA][userB] == -1)
+    float getSimilarityCosinus(int _userA, int _userB) {
+        if (m_similarities[_userA][_userB] == -1)
         {
             float dotProduct = 0.0f;
             float normA = 0.0f;
             float normB = 0.0f;
 
-            for (int i = 0; i < nbItems; i++) {
-                if (users[userA][i] != -1.0f && users[userB][i] != -1.0f) {
-                    dotProduct += users[userA][i] * users[userB][i];
-                    normA += users[userA][i] * users[userA][i];
-                    normB += users[userB][i] * users[userB][i];
+            for (int i = 0; i < m_nbItems; i++) {
+                if (m_users[_userA][i] != -1.0f && m_users[_userB][i] != -1.0f) {
+                    dotProduct += m_users[_userA][i] * m_users[_userB][i];
+                    normA += m_users[_userA][i] * m_users[_userA][i];
+                    normB += m_users[_userB][i] * m_users[_userB][i];
                 }
             }
 
             if (normA == 0 || normB == 0) return 0.0f;
 
             float result = dotProduct / (sqrt(normA) * sqrt(normB));
-            similarities[userA][userB] = result;
-            similarities[userB][userA] = result;
+            m_similarities[_userA][_userB] = result;
+            m_similarities[_userB][_userA] = result;
         }
-        return similarities[userA][userB];
+        return m_similarities[_userA][_userB];
     }
 
-    void predictUserRating(int userId)
+    void predictUserRating(int _userId)
     {
-        for (int itemId = 0; itemId < nbItems; itemId++) {
-            if (users[userId][itemId] == -1.0f) {
+        for (int itemId = 0; itemId < m_nbItems; itemId++) {
+            if (m_users[_userId][itemId] == -1.0f) {
                 float weightedSum = 0.0f;
                 float sumOfWeights = 0.0f;
 
-                for (int otherUserId = 0; otherUserId < nbUsers; otherUserId++) {
-                    if (otherUserId != userId && users[otherUserId][itemId] != -1.0f) {
-                        float similarity = getSimilarityCosinus(userId, otherUserId);
-                        weightedSum += similarity * users[otherUserId][itemId];
+                for (int otherUserId = 0; otherUserId < m_nbUsers; otherUserId++) {
+                    if (otherUserId != _userId && m_users[otherUserId][itemId] != -1.0f) {
+                        float similarity = getSimilarityCosinus(_userId, otherUserId);
+                        weightedSum += similarity * m_users[otherUserId][itemId];
                         sumOfWeights += similarity;
                     }
                 }
 
                 if (sumOfWeights > 0) {
-                    predicted[userId][itemId] = weightedSum / sumOfWeights;
+                    m_predicted[_userId][itemId] = weightedSum / sumOfWeights;
                 } else {
-                    predicted[userId][itemId] = 0.0f; // Default prediction if no similar users
+                    m_predicted[_userId][itemId] = 0.0f; // Default prediction if no similar users
                 }
             }
         }
@@ -152,15 +146,15 @@ public:
         }
     }
 
-    std::vector<int> getRecommendations(int user, int k)
+    std::vector<int> getRecommendations(int _user, int _k)
     {
         std::vector<std::pair<int, float>> recommendations;
         
         for (int i = 0; i < getNbItems(); i++)
         {
-            if (users[user][i] == -1)
+            if (m_users[_user][i] == -1)
             {
-                recommendations.push_back({i, predicted[user][i]});
+                recommendations.push_back({i, m_predicted[_user][i]});
             }
         }
         
@@ -170,12 +164,12 @@ public:
                   });
         
         std::vector<int> result;
-        for (int i = 0; i < std::min(k, (int)recommendations.size()); i++)
+        for (int i = 0; i < std::min(_k, (int)recommendations.size()); i++)
         {
             result.push_back(recommendations[i].first);
         }
         
-        for (int i = 0; i < std::min(k, (int)recommendations.size()); i++)
+        for (int i = 0; i < std::min(_k, (int)recommendations.size()); i++)
         {
             std::cout << "Item " << recommendations[i].first << " - Score: " << recommendations[i].second << std::endl;
         }
@@ -206,6 +200,36 @@ public:
             std::cout << "User " << userId << " - Item " << itemId << " - Score: " << allRatings[i].second << std::endl;
         }
     }
+
+    void printDistributionOfRatings()
+    {
+        std::vector<int> distribution(11, 0); // Bins for ratings 0.0 to 5.0 in steps of 0.5
+
+        for (int i = 0; i < getNbUsers(); i++) {
+            for (int j = 0; j < getNbItems(); j++) {
+                float rating = getPredicted()[i][j];
+                if (rating >= 0) {
+                    int bin = static_cast<int>(rating * 2); // Multiply by 2 to get bins of 0.5
+                    if (bin >= 0 && bin < distribution.size()) {
+                        distribution[bin]++;
+                    }
+                }
+            }
+        }
+
+        std::cout << "Distribution of predicted ratings:" << std::endl;
+        for (int i = 0; i < distribution.size(); i++) {
+            float ratingValue = i * 0.5f;
+            std::cout << "Rating " << ratingValue << ": " << distribution[i] << std::endl;
+        }
+    }
+    
+    // Getters
+    int getNbUsers() const { return m_nbUsers; }
+    int getNbItems() const { return m_nbItems; }
+    const std::vector<std::vector<float>>& getUsers() const { return m_users; }
+    const std::vector<std::vector<float>>& getPredicted() const { return m_predicted; }
+    const std::vector<std::vector<float>>& getSimilarities() const { return m_similarities; }
 };
 
 
@@ -246,6 +270,8 @@ int main() {
     recSys.getRecommendations(0, 10);
 
     recSys.printMaxNotes();
+
+    recSys.printDistributionOfRatings();
 
     std::cout << std::endl;
     
